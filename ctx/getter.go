@@ -9,7 +9,6 @@ import (
   "gopkg.in/mgo.v2/bson"
 )
 
-
 // 从body的raw中注入到一个结构体
 func (c *New) InjectRaw(value interface{}) {
   bson.UnmarshalJSON(c.RawData, value)

@@ -13,10 +13,6 @@ var (
 
 // 初始化redis连接池
 func InitRedisPool() {
-  if !conf.UseRedis {
-    return
-  }
-
   if RedisPool == nil {
     RedisPool = &redis.Pool{
       MaxIdle:     3,
@@ -36,8 +32,5 @@ func CloseRedisPool() {
 }
 
 func GetRedis() redis.Conn {
-  if !conf.UseRedis {
-    return nil
-  }
   return RedisPool.Get()
 }

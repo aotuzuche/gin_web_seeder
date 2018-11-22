@@ -2,22 +2,17 @@ package ctx
 
 import (
   "net/http"
-  "web/db"
   "web/errgo"
+  "web/plugins"
   "web/util"
 
   "github.com/gin-gonic/gin"
-  "github.com/gomodule/redigo/redis"
-  "gopkg.in/mgo.v2"
 )
 
 type New struct {
-  Ctx         *gin.Context
-  RawData     []byte
-  MgoDB       *mgo.Database
-  Redis       redis.Conn
-  Errgo       *errgo.Stack
-  mgoDBCloser func()
+  Ctx     *gin.Context
+  RawData []byte
+  plugins.Plugins
 }
 
 func CreateCtx(fn func(*New)) func(*gin.Context) {
@@ -27,69 +22,18 @@ func CreateCtx(fn func(*New)) func(*gin.Context) {
     util.Println()
 
     // 创建上下文
-    ctx, err := NewCtx(c)
-
-    // 如果创建过程中有报错，返回错误
-    if err != nil {
-      ctx.Error(err)
-      return
+    bytes, _ := c.GetRawData()
+    ctx := &New{
+      c,
+      bytes,
+      plugins.CreatePlugins(),
     }
 
     // defer
-    defer ctx.Close()
+    defer plugins.DestroyPlugins(ctx.Plugins)
 
     // 调用控制器
     fn(ctx)
-  }
-}
-
-// 创建上下文，连接mgo与redis数据库
-func NewCtx(c *gin.Context) (*New, error) {
-  bytes, _ := c.GetRawData()
-
-  mg, closer, err := db.CloneMgoDB()
-  if err != nil {
-    util.Println("[MGO] 😈 Error")
-    return nil, err
-  }
-  if mg != nil {
-    util.Println("[MGO] 😄 OK")
-  }
-
-  rds := db.GetRedis()
-  if rds != nil {
-    util.Println("[RDS] 😄 OK")
-  }
-
-  return &New{
-    c,
-    bytes,
-    mg,
-    rds,
-    errgo.Create(),
-    closer,
-  }, nil
-}
-
-// 创建不连接数据库的上下文
-func NewBaseCtx(c *gin.Context) *New {
-  bytes, _ := c.GetRawData()
-  return &New{
-    Ctx:     c,
-    RawData: bytes,
-    Errgo:   errgo.Create(),
-  }
-}
-
-// 关闭数据库连接
-func (c *New) Close() {
-  if c.mgoDBCloser != nil {
-    c.mgoDBCloser()
-    util.Println("[MGO] 👋 CLOSED")
-  }
-  if c.Redis != nil {
-    c.Redis.Close()
-    util.Println("[RDS] 👋 CLOSED")
   }
 }
 
@@ -124,15 +68,13 @@ func (c *New) Error(errNo interface{}) {
   err := errgo.Get(errNo)
 
   util.Println()
+  util.Println(" >>> ORIGIN:", errNo)
   util.Println(" >>> ERROR:", err.Message)
   util.Println(" >>> ERROR CODE:", err.Code)
   util.Println(" >>> REQUEST METHOD:", c.Ctx.Request.Method)
   util.Println(" >>> REQUEST URL:", c.Ctx.Request.URL.String())
   util.Println(" >>> USER AGENT:", c.Ctx.Request.UserAgent())
   util.Println()
-
-  // 清除错误栈
-  c.Errgo.ClearErrorStack()
 
   c.Ctx.JSON(err.Status, gin.H{
     "msg":  err.Message,
