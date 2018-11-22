@@ -97,7 +97,7 @@ func (s *Stack) TimeLaterThen(t time.Time, t2 time.Time, errNo string) error {
 }
 
 // 添加一个错误进栈
-func (s *Stack) Error(errNo string) error {
+func (s *Stack) PushError(errNo string) error {
   err := errors.New(errNo)
   *s = append(*s, err)
   return err

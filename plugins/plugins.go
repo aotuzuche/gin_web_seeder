@@ -1,8 +1,6 @@
 package plugins
 
 import (
-  "longRentServer/util"
-  "web/db"
   "web/errgo"
 
   "github.com/gomodule/redigo/redis"
@@ -20,25 +18,13 @@ type Plugins struct {
 // 在发生请求时，初始化插件
 func CreatePlugins() Plugins {
   // 创建mgodb的session
-  mg, closer, err := db.CloneMgoDB()
-  if err != nil {
-    util.Println("[MGO] 😈 Error")
-  }
-  if mg != nil {
-    util.Println("[MGO] 😄 OK")
-  }
-
-  // 从redis的连接池中取一个
-  rds := db.GetRedis()
-  if rds != nil {
-    util.Println("[RDS] 😄 OK")
-  }
+  mg, closer := CreateMgoSession()
 
   // 返回插件集
   return Plugins{
-    MgoDB: mg,
-    Redis: rds,
-    Errgo: errgo.Create(),
+    MgoDB:     mg,
+    Redis:     GetRedisConn(),
+    Errgo:     errgo.Create(),
     mgoCloser: closer,
   }
 }
@@ -46,13 +32,7 @@ func CreatePlugins() Plugins {
 // 在请求结束时，做收尾处理
 func DestroyPlugins(p Plugins) {
   // 关闭mgodb的连接
-  if p.mgoCloser != nil {
-    p.mgoCloser()
-    util.Println("[MGO] 👋 CLOSED")
-  }
+  CloseMgoSession(p.mgoCloser)
   // 关闭redis连接
-  if p.Redis != nil {
-    p.Redis.Close()
-    util.Println("[RDS] 👋 CLOSED")
-  }
+  CloseRedisConn(p.Redis)
 }
