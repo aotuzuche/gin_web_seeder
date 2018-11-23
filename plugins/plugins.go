@@ -7,7 +7,7 @@ import (
   "gopkg.in/mgo.v2"
 )
 
-// ctx的插件(插件名不允许叫Ctx、RawData或Plugins)
+// ctx的插件(插件名不允许叫Ctx、RawData、Errgo或Plugins)
 type Plugins struct {
   MgoDB     *mgo.Database
   Redis     redis.Conn
@@ -17,14 +17,13 @@ type Plugins struct {
 
 // 在发生请求时，初始化插件
 func CreatePlugins() Plugins {
-  // 创建mgodb的session
-  mg, closer := CreateMgoSession()
+  // 获取mgodb的session
+  mg, closer := GetMgoSession()
 
   // 返回插件集
   return Plugins{
     MgoDB:     mg,
     Redis:     GetRedisConn(),
-    Errgo:     errgo.Create(),
     mgoCloser: closer,
   }
 }

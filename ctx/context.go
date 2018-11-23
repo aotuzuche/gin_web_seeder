@@ -12,6 +12,7 @@ import (
 type New struct {
   Ctx     *gin.Context
   RawData []byte
+  Errgo   *errgo.Stack
   plugins.Plugins
 }
 
@@ -26,6 +27,7 @@ func CreateCtx(fn func(*New)) func(*gin.Context) {
     ctx := &New{
       c,
       bytes,
+      errgo.Create(),
       plugins.CreatePlugins(),
     }
 
@@ -39,33 +41,32 @@ func CreateCtx(fn func(*New)) func(*gin.Context) {
 
 // 成功处理
 func (c *New) Success(data gin.H) {
-  respH := gin.H{
+  resp := gin.H{
     "msg":  "ok",
     "code": 0,
   }
 
   if len(data) > 1 { // Almost the length is more than 1, so just check it first.
-    respH["data"] = data
+    resp["data"] = data
   } else if data["data"] != nil {
-    respH["data"] = data["data"]
+    resp["data"] = data["data"]
   } else if data != nil && len(data) > 0 {
-    respH["data"] = data
+    resp["data"] = data
   }
 
   status := http.StatusOK
-
   if data == nil {
     status = http.StatusNoContent
   }
 
-  c.Ctx.JSON(status, respH)
+  c.Ctx.JSON(status, resp)
 }
 
 // 处理错误
 func (c *New) Error(errNo interface{}) {
 
   // 根据错误号获取错误内容（错误号是个int或error）
-  err := errgo.Get(errNo)
+  err := errgo.GetErrorType(errNo)
 
   util.Println()
   util.Println(" >>> ORIGIN:", errNo)

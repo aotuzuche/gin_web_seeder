@@ -7,9 +7,9 @@ import (
   "gopkg.in/mgo.v2"
 )
 
-func CreateMgoSession() (*mgo.Database, func()) {
+func GetMgoSession() (*mgo.Database, func()) {
   // 创建mgodb的session
-  mg, closer, err := db.CloneMgoDB()
+  mg, closer, err := db.GetMgoSession()
   if err != nil {
     util.Println("[MGO] 😈 Error")
     panic(err)

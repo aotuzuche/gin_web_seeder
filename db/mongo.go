@@ -36,7 +36,7 @@ func ConnectMgoDB() {
 // 克隆一个mongodb的session
 // 使用完成后需要关闭session
 //   e.g.  defer session.close()
-func CloneMgoDB() (*mgo.Database, func(), error) {
+func GetMgoSession() (*mgo.Database, func(), error) {
   if Connecting {
     session := Session.Clone()
     closeFn := func() {
