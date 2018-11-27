@@ -84,10 +84,10 @@ func (c *New) Error(errNo interface{}) {
   })
 }
 
-// 响应，如果有错误走Error，否则走Success
-func (c *New) Response(err interface{}, succ gin.H) {
+// 响应，如果有错误走Error，否则走Success，但为了让success里的数据懒执行，需要用一个func包装
+func (c *New) Response(err interface{}, succ func() gin.H) {
   if err == nil {
-    c.Success(succ)
+    c.Success(succ())
     return
   }
   c.Error(err)
